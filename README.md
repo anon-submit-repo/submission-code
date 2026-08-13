@@ -1,10 +1,29 @@
 # MetaEx-Skill
 
 An anchor-free **learned explorer** for text-space skill optimization on frozen language models.
-At each round a frozen meta-controller reads the target's own **compact-fail** evidence (failing
-trajectories only, compressed), samples a *population* of edit operations from an explicit
-op-menu, authors a full skill under each, and keeps the best through a strict held-out selection
-gate—steered across rounds by *linguistic feedback* on which operations helped or regressed.
+
+![MetaEx-Skill framework](assets/framework.png)
+
+**How it works.** Each round the frozen weak model runs the training tasks with *no skill* and
+the harness scores every trajectory. We then form the **compact-fail** evidence *F*: only the
+*failing* trajectories are kept (successes dropped) and compressed, so *F* is a dense record of
+the recurring procedural errors. A frozen meta-controller—the *learned explorer*—reads *F* and
+then:
+
+1. **picks a population** of edit *operations* from an explicit op-menu (`ADD_RULE`,
+   `SPECIALIZE`, `ADD_SANITY_CHECK`, `ADD_FORMATTING_RULE`, `DECOMPOSE`, `PRUNE`);
+2. **authors a full skill from scratch** under each operation (an op-variant population);
+3. **keeps the best** under a strict held-out selection gate.
+
+The accepted skill seeds the next round, and each operation's verdict (*helped / regressed /
+gate-rejected*) feeds a **linguistic feedback** history that steers the next round. The explorer
+needs **no base generator to seed it**—*anchoring* it on one (SkillOpt / Trace2Skill / EvoSkill /
+GEPA) inherits that base's selection noise and hurts, so the deployed method is anchor-free.
+
+Under a matched target-query budget the explorer tops every benchmark, ahead of GEPA and every
+skill baseline, and reaches its plateau at a fraction of GEPA's budget:
+
+![Refinement trajectories vs. budget](assets/results_curves.png)
 
 This repository contains the runners for the fully-reproducible open-weights experiments
 (Qwen3-8B / Qwen3.6-35B-A3B on the DSPy harness).
