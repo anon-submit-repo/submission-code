@@ -1,0 +1,5 @@
+.env
+skills/
+*.log
+__pycache__/
+*.pyc

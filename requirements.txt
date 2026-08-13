@@ -1,0 +1,4 @@
+dspy>=3.3.0
+litellm
+datasets
+huggingface_hub<0.35
