@@ -65,7 +65,7 @@ All splits use `seed=42` (train ~150 / val ~50). The first HuggingFace pull may 
 ```bash
 # Iterative refinement, one method at a time (bench, method, rounds):
 python gepa_refine.py hotpotqa skillopt 30
-python gepa_refine.py pupa metaex 30              # (methods: oneshot skillopt trace2skill evoseed gepa)
+python gepa_refine.py pupa explorer_na 30         # methods below
 
 # MetaEx op-menu population sweep (bench, M_pop, feedback_mode, rounds):
 python gepa_metaex_ablation_grid.py hotpotqa 4 fail 30
@@ -79,6 +79,34 @@ SKILLS_DIR=./skills python gepa_transfer.py pupa ./skills/pupa_metaex.md
 ```
 
 Authored skills are saved to `SKILLS_DIR` (default `./skills`).
+
+## Baselines (all methods, one command each)
+
+Every competing method runs through the **same** iterative-refinement loop, harness, target
+model, and matched budget as our explorer—only the proposal step differs. These are our
+**faithful in-harness re-implementations** (each captures the method's published proposal
+mechanism), not the original authors' code, so all methods are compared on identical footing.
+Pass the method name to `gepa_refine.py`:
+
+| Method | `method` arg | Proposal step |
+|---|---|---|
+| No-skill | *(run with the empty skill)* | none |
+| One-shot | `oneshot` | author one skill from examples, deploy ungated |
+| SkillOpt | `skillopt` | reflect on a failure minibatch → consolidated add/delete/replace edits |
+| Trace2Skill | `trace2skill` | distill trajectory-level lessons |
+| EvoSkill | `evoseed` | seed-evolution refinement under rotating lenses |
+| GEPA | `gepa` | reflective evolution from a base prompt |
+| **MetaEx (ours)** | `explorer_na` | learned op-menu population + linguistic feedback (anchor-free) |
+
+```bash
+for m in oneshot skillopt trace2skill evoseed gepa explorer_na; do
+  python gepa_refine.py hotpotqa $m 30
+done
+```
+
+`gepa_metaex_ablation_grid.py` runs the MetaEx op-menu **population** variant (`M_pop` and
+feedback-mode sweep); `gepa_metaex_anchor.py` runs the **anchored** ablation
+`MetaEx∘G` (seed the explorer on any base generator `G`).
 
 ## Closed-model benchmarks (separate harness)
 
