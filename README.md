@@ -2,6 +2,9 @@
 
 An anchor-free **learned explorer** for text-space skill optimization on frozen language models.
 
+**Results page:** <https://anon-submit-repo.github.io/submission-code/> — every reported number,
+the budget curves, the transfer study, and the ablations, interactively (source in [`docs/`](docs/)).
+
 ![MetaEx-Skill framework](assets/framework.png)
 
 **How it works.** Each round the frozen weak model runs the training tasks with *no skill* and
