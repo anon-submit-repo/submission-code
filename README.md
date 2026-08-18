@@ -84,10 +84,13 @@ python gepa_metaex_ablation_grid.py hotpotqa 4 fail 30
 python gepa_metaex_anchor.py hotpotqa 4 fail 30 gepa   # anchor in {none,evoseed,skillopt,trace2skill,gepa}
 
 # Cross-model transfer — apply an authored skill zero-shot to another frozen target:
-SKILLS_DIR=./skills python gepa_transfer.py pupa ./skills/pupa_metaex.md
+SKILLS_DIR=./skills python gepa_transfer.py pupa ./skills/pupa_metaex.md   # weak->strong (8B skill -> 35B target)
+python gepa_transfer_8btarget.py pupa ./skills/pupa_metaex.md              # strong->weak (35B skill -> 8B target)
 ```
 
-Authored skills are saved to `SKILLS_DIR` (default `./skills`).
+`gepa_transfer.py` evaluates a skill on the 35B target; `gepa_transfer_8btarget.py` is the
+reverse direction (35B-authored skill applied to the 8B target). Pass `NOSKILL` as the skill
+path for the no-skill baseline. Authored skills are saved to `SKILLS_DIR` (default `./skills`).
 
 ## Baselines (all methods, one command each)
 
