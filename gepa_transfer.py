@@ -4,6 +4,15 @@
 # but all use the same refine loop + budget. Robust to transient async crashes (per-eval retry).
 # Usage: gepa_refine.py <bench> <method> <rounds>
 import sys, json, dspy, re, random, time
+# qwen3/qwen3.6 on the OpenAI-compatible /v1 endpoint ignore reasoning-effort params;
+# a system-role "/no_think" message is what actually disables thinking. Inject it on every call.
+_orig_forward=dspy.LM.forward
+def _forward_nothink(self,prompt=None,messages=None,**kw):
+    if messages is None and prompt is not None: messages=[{"role":"user","content":prompt}]; prompt=None
+    if messages is not None and not (messages and messages[0].get("role")=="system" and messages[0].get("content")=="/no_think"):
+        messages=[{"role":"system","content":"/no_think"}]+list(messages)
+    return _orig_forward(self,prompt=prompt,messages=messages,**kw)
+dspy.LM.forward=_forward_nothink
 import os as _envos
 BASE=_envos.environ.get("OLLAMA_BASE","http://localhost:11434/v1"); NT={"reasoning":{"effort":"none"}}
 task_lm=dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=900,temperature=0.0,extra_body=NT)

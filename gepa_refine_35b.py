@@ -5,9 +5,19 @@
 # Usage: gepa_refine.py <bench> <method> <rounds>
 import sys, json, dspy, re, random, time
 import os as _envos
+# --- qwen3.6 no-think fix (system-role /no_think; API params ineffective on /v1) ---
+_orig_forward = dspy.LM.forward
+def _forward_nothink(self, prompt=None, messages=None, **kw):
+    if messages is None and prompt is not None:
+        messages=[{"role":"user","content":prompt}]; prompt=None
+    if messages is not None:
+        if not (messages and messages[0].get("role")=="system" and messages[0].get("content")=="/no_think"):
+            messages=[{"role":"system","content":"/no_think"}]+list(messages)
+    return _orig_forward(self, prompt=prompt, messages=messages, **kw)
+dspy.LM.forward=_forward_nothink
 BASE=_envos.environ.get("OLLAMA_BASE","http://localhost:11434/v1"); NT={"reasoning":{"effort":"none"}}
-task_lm=dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=900,temperature=0.0,extra_body=NT)
-gen_lm =dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=1500,temperature=0.9,extra_body=NT)
+task_lm=dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=6144,temperature=0.0,extra_body=NT)
+gen_lm =dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=4096,temperature=0.9,extra_body=NT)
 dspy.configure(lm=task_lm)
 from dspy.evaluate import Evaluate
 
@@ -16,21 +26,19 @@ bench=sys.argv[1]; method=sys.argv[2]; ROUNDS=int(sys.argv[3]) if len(sys.argv)>
 if bench=="pupa":
     from datasets import load_dataset
     raw=list(load_dataset("Columbia-NLP/PUPA","pupa_new")["train"]); random.Random(42).shuffle(raw)
-    def mk(e): return dspy.Example(user_query=e["user_query"],target=e.get("target_response","")or"",
-        pii=[p for p in (e.get("pii_units","")or"").split("||") if p.strip()]).with_inputs("user_query")
+    def mk(e): return dspy.Example(redacted_query=(e.get("redacted_query","")or""),target=(e.get("target_response","")or"")).with_inputs("redacted_query")
     train=[mk(x) for x in raw[:150]]; val=[mk(x) for x in raw[150:200]]
-    judge=dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=200,temperature=0.0,extra_body=NT)
+    judge=dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=2048,temperature=0.0,extra_body=NT)
     def metric(g,p,trace=None,pred_name=None,pred_trace=None):
-        r=getattr(p,'response','')or""
-        if not r.strip(): q=0.0
-        else:
-            jr=judge(f"Rate if RESPONSE answers QUERY as well as REFERENCE. YES or NO.\nQUERY:{g.user_query[:400]}\nREFERENCE:{g.target[:400]}\nRESPONSE:{r[:400]}")[0].upper()
-            q=1.0 if "YES" in jr else 0.0
-        leak=sum(1 for u in g.pii if u.strip() and u.split("_")[-1].lower() in r.lower())/max(1,len(g.pii))
-        return (q+(1-leak))/2
-    SIG="user_query -> response"; INP="user_query"
-    PHRASE="privacy-conscious query answering (answer helpfully WITHOUT leaking user PII)"
-    BASEINSTR="Answer the user's query helpfully without leaking private PII."
+        # PROPER PUPA: input is the PII-REDACTED query; score is response QUALITY only.
+        # No leak term (redacted input has no PII to copy). Tests utility under privacy redaction.
+        r=getattr(p,"response","")or""
+        if not r.strip(): return 0.0
+        jr=judge(f"Rate if RESPONSE answers the QUERY as well as the REFERENCE (helpfulness and completeness). YES or NO.\nQUERY:{g.redacted_query[:400]}\nREFERENCE:{g.target[:400]}\nRESPONSE:{r[:400]}")[0].upper()
+        return 1.0 if "YES" in jr else 0.0
+    SIG="redacted_query -> response"; INP="redacted_query"
+    PHRASE="answering a privacy-redacted user query helpfully and completely under information redaction"
+    BASEINSTR="Answer the privacy-redacted user query as helpfully and completely as possible; use neutral placeholders where information is redacted."
 elif bench=="hotpotqa":
     from dspy.datasets import HotPotQA
     ds=HotPotQA(train_seed=42,train_size=150,eval_seed=42,dev_size=50,test_size=0)

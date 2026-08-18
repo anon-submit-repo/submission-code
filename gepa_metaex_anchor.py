@@ -5,6 +5,13 @@
 # Usage: gepa_refine.py <bench> <method> <rounds>
 import sys, json, dspy, re, random, time
 import os as _envos
+_orig_forward=dspy.LM.forward
+def _forward_nothink(self,prompt=None,messages=None,**kw):
+    if messages is None and prompt is not None: messages=[{"role":"user","content":prompt}]; prompt=None
+    if messages is not None and not (messages and messages[0].get("role")=="system" and messages[0].get("content")=="/no_think"):
+        messages=[{"role":"system","content":"/no_think"}]+list(messages)
+    return _orig_forward(self,prompt=prompt,messages=messages,**kw)
+dspy.LM.forward=_forward_nothink
 BASE=_envos.environ.get("OLLAMA_BASE","http://localhost:11434/v1"); NT={"reasoning":{"effort":"none"}}
 task_lm=dspy.LM("openai/qwen3:8b",api_base=BASE,api_key="EMPTY",max_tokens=900,temperature=0.0,extra_body=NT)
 gen_lm =dspy.LM("openai/qwen3:8b",api_base=BASE,api_key="EMPTY",max_tokens=1500,temperature=0.9,extra_body=NT)
@@ -174,6 +181,8 @@ for r in range(1,ROUNDS+1):
         cand=gen(f"Anchor-free MetaEx optimizer for {PHRASE}. {base}Apply operation [{op}]. Output FULL improved skill(200-400w) built to fix the failures.\n{fb}\nReturn only the skill.")
         if not cand: continue
         v=evalp(wrap(cand)); queries+=len(val)
+        _acc=1 if v>best_val else 0
+        print(f"CAND round={r} op={op.split(':')[0]} v={v} best={best_val} accept={_acc}", flush=True)
         if v>best_val: best_val=v; best_skill=cand
     if r%5==0 or v>curve[-1]["val"]:
         curve.append({"round":r,"queries":queries,"val":best_val})

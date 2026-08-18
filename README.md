@@ -42,8 +42,17 @@ ollama pull qwen3:8b                       # or qwen3.6:35b-a3b for the 35B targ
 # ollama exposes an OpenAI-compatible API at http://localhost:11434/v1
 ```
 
-Point `OLLAMA_BASE` in `.env` at that endpoint. Models are served **non-thinking**
-(`extra_body={"reasoning":{"effort":"none"}}`); Qwen3.5/3.6 support this natively.
+Point `OLLAMA_BASE` in `.env` at that endpoint.
+
+**Non-thinking is required and enforced in-code.** On the OpenAI-compatible `/v1` endpoint,
+Qwen3/Qwen3.6 ignore the `reasoning.effort` parameter, so the runners disable thinking by
+injecting a system-role `/no_think` message on every call (a small `dspy.LM.forward` wrapper at
+the top of each script). Do not remove it: without it the target emits long reasoning that both
+skews the scores and overflows `max_tokens`, breaking the structured-output parse.
+
+**Raise the file-descriptor limit** before long runs: the DSPy/litellm client opens many
+connections, and the default `ulimit -n 1024` can exhaust mid-run (eval calls then fail and
+silently score `0`). Prefix long jobs with `ulimit -n 65536`.
 
 ## Datasets (open-model experiments)
 

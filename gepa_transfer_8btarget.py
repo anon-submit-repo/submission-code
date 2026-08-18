@@ -4,8 +4,7 @@
 # but all use the same refine loop + budget. Robust to transient async crashes (per-eval retry).
 # Usage: gepa_refine.py <bench> <method> <rounds>
 import sys, json, dspy, re, random, time
-# qwen3/qwen3.6 on the OpenAI-compatible /v1 endpoint ignore reasoning-effort params;
-# a system-role "/no_think" message is what actually disables thinking. Inject it on every call.
+import os as _envos
 _orig_forward=dspy.LM.forward
 def _forward_nothink(self,prompt=None,messages=None,**kw):
     if messages is None and prompt is not None: messages=[{"role":"user","content":prompt}]; prompt=None
@@ -13,35 +12,30 @@ def _forward_nothink(self,prompt=None,messages=None,**kw):
         messages=[{"role":"system","content":"/no_think"}]+list(messages)
     return _orig_forward(self,prompt=prompt,messages=messages,**kw)
 dspy.LM.forward=_forward_nothink
-import os as _envos
 BASE=_envos.environ.get("OLLAMA_BASE","http://localhost:11434/v1"); NT={"reasoning":{"effort":"none"}}
-task_lm=dspy.LM("openai/qwen3:8b",api_base=BASE,api_key="EMPTY",max_tokens=900,temperature=0.0,extra_body=NT)
-gen_lm =dspy.LM("openai/qwen3:8b",api_base=BASE,api_key="EMPTY",max_tokens=1500,temperature=0.9,extra_body=NT)
+task_lm=dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=900,temperature=0.0,extra_body=NT)
+gen_lm =dspy.LM("openai/qwen3.6:35b-a3b",api_base=BASE,api_key="EMPTY",max_tokens=1500,temperature=0.9,extra_body=NT)
 dspy.configure(lm=task_lm)
 from dspy.evaluate import Evaluate
 
-bench=sys.argv[1]; MPOP=int(sys.argv[2]); MODE=sys.argv[3]; ROUNDS=int(sys.argv[4]) if len(sys.argv)>4 else 60
-assert MODE in ("full","fail","success","both"), MODE
+bench=sys.argv[1]; SKILLPATH=sys.argv[2]
 method="explorer_na"
 
 if bench=="pupa":
     from datasets import load_dataset
     raw=list(load_dataset("Columbia-NLP/PUPA","pupa_new")["train"]); random.Random(42).shuffle(raw)
-    def mk(e): return dspy.Example(user_query=e["user_query"],target=e.get("target_response","")or"",
-        pii=[p for p in (e.get("pii_units","")or"").split("||") if p.strip()]).with_inputs("user_query")
+    def mk(e): return dspy.Example(redacted_query=(e.get("redacted_query","")or""),target=(e.get("target_response","")or"")).with_inputs("redacted_query")
     train=[mk(x) for x in raw[:150]]; val=[mk(x) for x in raw[150:200]]
-    judge=dspy.LM("openai/qwen3:8b",api_base=BASE,api_key="EMPTY",max_tokens=200,temperature=0.0,extra_body=NT)
+    judge=dspy.LM("openai/qwen3:8b",api_base=BASE,api_key="EMPTY",max_tokens=2048,temperature=0.0,extra_body=NT)
     def metric(g,p,trace=None,pred_name=None,pred_trace=None):
-        r=getattr(p,'response','')or""
-        if not r.strip(): q=0.0
-        else:
-            jr=judge(f"Rate if RESPONSE answers QUERY as well as REFERENCE. YES or NO.\nQUERY:{g.user_query[:400]}\nREFERENCE:{g.target[:400]}\nRESPONSE:{r[:400]}")[0].upper()
-            q=1.0 if "YES" in jr else 0.0
-        leak=sum(1 for u in g.pii if u.strip() and u.split("_")[-1].lower() in r.lower())/max(1,len(g.pii))
-        return (q+(1-leak))/2
-    SIG="user_query -> response"; INP="user_query"
+        # PROPER PUPA: redacted input, quality only (matches the 35B from-scratch protocol).
+        r=getattr(p,"response","")or""
+        if not r.strip(): return 0.0
+        jr=judge(f"Rate if RESPONSE answers the QUERY as well as the REFERENCE (helpfulness and completeness). YES or NO.\nQUERY:{g.redacted_query[:400]}\nREFERENCE:{g.target[:400]}\nRESPONSE:{r[:400]}")[0].upper()
+        return 1.0 if "YES" in jr else 0.0
+    SIG="redacted_query -> response"; INP="redacted_query"
     PHRASE="privacy-conscious query answering (answer helpfully WITHOUT leaking user PII)"
-    BASEINSTR="Answer the user's query helpfully without leaking private PII."
+    BASEINSTR="Answer the privacy-redacted user query as helpfully and completely as possible; use neutral placeholders where information is redacted."
 elif bench=="hotpotqa":
     from dspy.datasets import HotPotQA
     ds=HotPotQA(train_seed=42,train_size=150,eval_seed=42,dev_size=50,test_size=0)
@@ -153,25 +147,11 @@ def propose(cur, fb, r):
     # explorer_na (MetaEx)
     return gen(f"Anchor-free MetaEx optimizer for {PHRASE}. {base}REFINE (keep what works, {lens}). Output FULL improved skill(200-400w).\n{fb}\nReturn only the skill.")
 
-best_skill=""; best_val=evalp(M()); queries=len(val)
-curve=[{"round":0,"queries":queries,"val":best_val}]
-for r in range(1,ROUNDS+1):
-    cur=wrap(best_skill) if best_skill else M()
-    fb=rollout(cur); queries+=20
-    # MetaEx op-menu population: MPOP variants this round, gate keeps best strict-improvement
-    import random as _rnd
-    ops_this=_rnd.sample(OPS, min(MPOP,len(OPS)))
-    for op in ops_this:
-        base=f"CURRENT skill:\n{best_skill}\n\n" if best_skill else ""
-        cand=gen(f"Anchor-free MetaEx optimizer for {PHRASE}. {base}Apply operation [{op}]. Output FULL improved skill(200-400w) built to fix the failures.\n{fb}\nReturn only the skill.")
-        if not cand: continue
-        v=evalp(wrap(cand)); queries+=len(val)
-        if v>best_val: best_val=v; best_skill=cand
-    if r%5==0 or v>curve[-1]["val"]:
-        curve.append({"round":r,"queries":queries,"val":best_val})
-        print(f"[{method}/{bench}] round {r}: queries={queries} best_val={best_val}", flush=True)
-import os as _os
-SKILLS_DIR=_envos.environ.get("SKILLS_DIR","./skills"); _os.makedirs(SKILLS_DIR,exist_ok=True)
-open(f"{SKILLS_DIR}/{bench}_metaex_M{MPOP}_{MODE}.md","w").write(best_skill or "")
-print(f"SAVED_SKILL {SKILLS_DIR}/{bench}_metaex_M{MPOP}_{MODE}.md ({len(best_skill or '')} chars, val={best_val})")
-print(f"RESULT_ABL bench={bench} MPOP={MPOP} MODE={MODE} "+json.dumps(curve))
+
+# TRANSFER: load an 8B-authored skill (or NOSKILL) and eval on the 35B target, zero optimization
+if SKILLPATH=="NOSKILL":
+    sk=""; prog=M()
+else:
+    sk=open(SKILLPATH).read(); prog=wrap(sk)
+v=evalp(prog)
+print(f"TRANSFER bench={bench} target=qwen3-8b skill={SKILLPATH} val={v}")
