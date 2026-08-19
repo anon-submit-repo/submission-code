@@ -219,6 +219,61 @@ svg.chart{display:block; width:100%; min-width:660px; height:auto; overflow:visi
 figcaption{margin-top:12px; font-size:13px; color:var(--ink-2)}
 figure{margin:0}
 
+/* ---------- hand-drawn diagrams ---------- */
+.diagwrap{overflow-x:auto; overflow-y:hidden; margin:0 -4px}
+svg.diagram{display:block; width:100%; min-width:760px; height:auto; color:var(--ink)}
+svg.diagram.narrow{min-width:520px}
+.diagram text{font-family:var(--mono); font-size:10px; fill:var(--ink-2)}
+.diagram .t-title{font-size:11.5px; fill:var(--ink)}
+.diagram .t-dim{fill:var(--ink-3); font-size:9.5px}
+.diagram .box{fill:var(--bg-2); stroke:var(--rule); stroke-width:1}
+.diagram .box-ex{fill:rgba(57,135,229,.05); stroke:var(--rule)}
+.diagram .box-out{fill:rgba(25,158,112,.10); stroke:#199e70}
+.diagram .arrow{stroke:var(--ink-3); stroke-width:1.4; fill:none}
+.diagram .arc{stroke:var(--ink-3); stroke-width:1.2; fill:none; opacity:.8}
+.diagram .arc-fb{stroke:var(--ours); stroke-width:1.2; fill:none; stroke-dasharray:5 4}
+.diagram .pass{fill:#199e70}
+.diagram .fail{fill:#e5534b}
+.diagram .chip{fill:#12161c; stroke:var(--rule)}
+.diagram .chip-on{fill:rgba(57,135,229,.16); stroke:var(--ours)}
+.diagram .chip-on + text, .diagram text.on{fill:var(--ours)}
+.diagram .card{fill:var(--bg-2); stroke:var(--rule)}
+.diagram .card-ok{fill:var(--bg-2); stroke:var(--rule)}
+.diag[data-stage="4"] .card-ok{fill:rgba(57,135,229,.14); stroke:var(--ours)}
+.diagram .line{fill:#2f3742}
+.diagram .gate{fill:rgba(217,89,38,.14); stroke:var(--gepa)}
+.diagram .t-gate{fill:var(--gepa)}
+.diagram .t-ours{fill:var(--ours)}
+.diag .st{opacity:.26; transition:opacity .45s ease}
+.diag[data-stage="1"] .s1,
+.diag[data-stage="2"] .s2,
+.diag[data-stage="3"] .s3,
+.diag[data-stage="4"] .s4{opacity:1}
+.diag.static .st{opacity:1}
+.diag .flowdot{fill:var(--ours); opacity:0}
+.diag[data-stage="1"] .f1,
+.diag[data-stage="2"] .f2,
+.diag[data-stage="3"] .f3,
+.diag[data-stage="4"] .f4{opacity:1; animation:flow 1.4s linear infinite}
+@keyframes flow{from{transform:translateX(0)} to{transform:translateX(var(--len))}}
+.diag .strike{opacity:0; transition:opacity .4s ease}
+.diag[data-stage="2"] .strike{opacity:1}
+.diag[data-stage="2"] .droppass{opacity:.18; transition:opacity .4s ease}
+.diagcap{margin:16px 0 0; min-height:44px; color:var(--ink-2); font-size:13.5px; line-height:1.55}
+.diagcap b{color:var(--ink); font-weight:500}
+.stagerail{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-top:18px}
+.stagerail .seg button{font-size:12px}
+.playbtn{font-family:var(--mono); font-size:12px; color:var(--ink-2); background:var(--bg-2); border:1px solid var(--rule); border-radius:3px; padding:7px 13px; cursor:pointer}
+.playbtn:hover{color:var(--ink); border-color:var(--ink-3)}
+
+/* ---------- population / gate figure ---------- */
+.popctl{display:flex; flex-wrap:wrap; gap:16px 26px; align-items:center; margin:18px 0 6px}
+.popctl label{font-family:var(--mono); font-size:12px; color:var(--ink-2); display:flex; align-items:center; gap:12px}
+.popctl input[type=range]{accent-color:var(--ours); width:170px}
+.popctl .val{font-family:var(--mono); font-size:13px; color:var(--ink); min-width:14px}
+.popout{font-family:var(--mono); font-size:12.5px; color:var(--ink-2)}
+.popout b{color:var(--ours); font-weight:500}
+
 /* ---------- heatmap ---------- */
 .hm{display:grid; grid-template-columns:auto repeat(4,minmax(58px,1fr)); gap:2px; font-family:var(--mono); font-size:12px}
 .hm .hh{color:var(--ink-3); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; padding:0 4px 6px; text-align:center; align-self:end}
@@ -242,6 +297,8 @@ figure{margin:0}
 .rtrack{position:relative; height:26px}
 .rline{position:absolute; top:12px; height:2px; border-radius:2px; background:var(--ink-3)}
 .ranges li.is-ours .rline{background:var(--ours)}
+.rband{position:absolute; top:5px; height:16px; border-radius:3px; background:rgba(107,116,128,.30)}
+.ranges li.is-ours .rband{background:rgba(57,135,229,.28)}
 .rdot{position:absolute; top:7px; width:12px; height:12px; border-radius:3px; background:var(--ink-2); border:2px solid var(--panel)}
 .ranges li.is-ours .rdot{background:var(--ours)}
 .rcap{position:absolute; top:-2px; font-family:var(--mono); font-size:10.5px; color:var(--ink-3)}
@@ -378,6 +435,150 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
     </div>
 
     <div class="panel panel-pad reveal">
+      <figure class="diag" id="loopdiag" data-stage="1">
+        <div class="diagwrap">
+        <svg class="diagram" viewBox="0 0 1000 430" role="img"
+             aria-label="The optimization loop: the frozen target runs the training split, compact-fail evidence keeps only failed trajectories, the learned explorer samples operations from a six-item menu and authors one full skill per operation, a strict gate on the held-out selection split keeps at most one, and each operation's verdict feeds back into the next round.">
+          <defs>
+            <marker id="ar" viewBox="0 0 9 7" refX="8" refY="3.5" markerWidth="7" markerHeight="6" orient="auto">
+              <path d="M0 0 L9 3.5 L0 7 z" fill="#6b7480"/></marker>
+            <marker id="arb" viewBox="0 0 9 7" refX="8" refY="3.5" markerWidth="7" markerHeight="6" orient="auto">
+              <path d="M0 0 L9 3.5 L0 7 z" fill="#3987e5"/></marker>
+            <marker id="arg" viewBox="0 0 9 7" refX="8" refY="3.5" markerWidth="7" markerHeight="6" orient="auto">
+              <path d="M0 0 L9 3.5 L0 7 z" fill="#199e70"/></marker>
+          </defs>
+
+          <!-- stage 1: rollout -->
+          <g class="st s1">
+            <rect class="box" x="16" y="152" width="100" height="96" rx="6"/>
+            <text class="t-title" x="66" y="190" text-anchor="middle">frozen</text>
+            <text class="t-title" x="66" y="206" text-anchor="middle">target</text>
+            <text class="t-dim" x="66" y="228" text-anchor="middle">never trained</text>
+            <line class="arrow" x1="120" y1="200" x2="162" y2="200" marker-end="url(#ar)"/>
+            <text class="t-dim" x="141" y="190" text-anchor="middle">runs D_tr</text>
+          </g>
+          <g class="st s1 s2">
+            <text class="t-dim" x="220" y="96" text-anchor="middle">scored trajectories</text>
+            <rect class="pass droppass" x="170" y="112" width="86" height="13" rx="3" opacity=".85"/>
+        <text class="t-dim" x="276" y="123" fill="#199e70">pass</text>
+        <line class="strike" x1="166" y1="118" x2="260" y2="118" stroke="var(--ink-3)" stroke-width="1.2"/>
+        <rect class="fail" x="170" y="138" width="62" height="13" rx="3" opacity=".9"/>
+        <text class="" x="276" y="149" fill="#e5534b">fail</text>
+        <rect class="pass droppass" x="170" y="164" width="94" height="13" rx="3" opacity=".85"/>
+        <text class="t-dim" x="276" y="175" fill="#199e70">pass</text>
+        <line class="strike" x1="166" y1="170" x2="268" y2="170" stroke="var(--ink-3)" stroke-width="1.2"/>
+        <rect class="fail" x="170" y="190" width="58" height="13" rx="3" opacity=".9"/>
+        <text class="" x="276" y="201" fill="#e5534b">fail</text>
+        <rect class="fail" x="170" y="216" width="80" height="13" rx="3" opacity=".9"/>
+        <text class="" x="276" y="227" fill="#e5534b">fail</text>
+        <rect class="pass droppass" x="170" y="242" width="66" height="13" rx="3" opacity=".85"/>
+        <text class="t-dim" x="276" y="253" fill="#199e70">pass</text>
+        <line class="strike" x1="166" y1="248" x2="240" y2="248" stroke="var(--ink-3)" stroke-width="1.2"/>
+        <rect class="fail" x="170" y="268" width="98" height="13" rx="3" opacity=".9"/>
+        <text class="" x="276" y="279" fill="#e5534b">fail</text>
+          </g>
+
+          <!-- stage 2: compact-fail -->
+          <g class="st s2">
+            <line class="arrow" x1="306" y1="200" x2="320" y2="200" marker-end="url(#ar)"/>
+            <rect class="box" x="326" y="140" width="104" height="120" rx="6"/>
+            <text class="t-title" x="378" y="126" text-anchor="middle">compact-fail F</text>
+            <rect class="fail" x="338" y="176" width="56" height="10" rx="3" opacity=".9"/>
+            <rect class="fail" x="338" y="196" width="64" height="10" rx="3" opacity=".9"/>
+            <rect class="fail" x="338" y="216" width="48" height="10" rx="3" opacity=".9"/>
+            <rect class="fail" x="338" y="236" width="60" height="10" rx="3" opacity=".9"/>
+            <line x1="408" y1="168" x2="408" y2="252" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 3"/>
+            <text class="t-dim" x="378" y="278" text-anchor="middle">failures only,</text>
+            <text class="t-dim" x="378" y="291" text-anchor="middle">truncated</text>
+          </g>
+
+          <!-- stage 3: explore -->
+          <g class="st s3">
+            <line class="arrow" x1="434" y1="200" x2="460" y2="200" marker-end="url(#ar)"/>
+            <text class="t-dim" x="447" y="190" text-anchor="middle">evidence</text>
+            <rect class="box-ex" x="466" y="64" width="248" height="292" rx="8"/>
+            <text class="t-title" x="590" y="90" text-anchor="middle">learned explorer</text>
+            <text class="t-dim" x="590" y="106" text-anchor="middle">frozen · reads F and the feedback</text>
+            <rect class="chip-on" x="478" y="122" width="110" height="28" rx="4"/>
+        <text class="on" x="533" y="140" text-anchor="middle">ADD_RULE</text>
+        <rect class="chip" x="596" y="122" width="110" height="28" rx="4"/>
+        <text class="" x="651" y="140" text-anchor="middle">SPECIALIZE</text>
+        <rect class="chip" x="478" y="158" width="110" height="28" rx="4"/>
+        <text class="" x="533" y="176" text-anchor="middle">SANITY_CHECK</text>
+        <rect class="chip-on" x="596" y="158" width="110" height="28" rx="4"/>
+        <text class="on" x="651" y="176" text-anchor="middle">FORMAT_RULE</text>
+        <rect class="chip-on" x="478" y="194" width="110" height="28" rx="4"/>
+        <text class="on" x="533" y="212" text-anchor="middle">DECOMPOSE</text>
+        <rect class="chip" x="596" y="194" width="110" height="28" rx="4"/>
+        <text class="" x="651" y="212" text-anchor="middle">PRUNE</text>
+            <text class="t-dim" x="590" y="252" text-anchor="middle">samples M_pop ops, no replacement</text>
+            <text class="t-dim" x="590" y="270" text-anchor="middle">authors one FULL skill per op</text>
+            <text class="t-dim" x="590" y="288" text-anchor="middle">M_pop ≤ 6 = menu size</text>
+            <line class="arrow" x1="718" y1="200" x2="740" y2="200" marker-end="url(#ar)"/>
+          </g>
+          <g class="st s3 s4">
+            <text class="t-dim" x="788" y="98" text-anchor="middle">op-variant population</text>
+            <rect class="card" x="746" y="110" width="84" height="52" rx="5"/>
+        <rect class="line" x="758" y="123" width="54" height="3" rx="1.5"/>
+        <rect class="line" x="758" y="134" width="44" height="3" rx="1.5"/>
+        <rect class="line" x="758" y="145" width="60" height="3" rx="1.5"/>
+        <line class="arrow" x1="832" y1="136" x2="848" y2="136"/>
+        <rect class="card-ok" x="746" y="174" width="84" height="52" rx="5"/>
+        <rect class="line" x="758" y="187" width="54" height="3" rx="1.5"/>
+        <rect class="line" x="758" y="198" width="44" height="3" rx="1.5"/>
+        <rect class="line" x="758" y="209" width="60" height="3" rx="1.5"/>
+        <line class="arrow" x1="832" y1="200" x2="848" y2="200"/>
+        <rect class="card" x="746" y="238" width="84" height="52" rx="5"/>
+        <rect class="line" x="758" y="251" width="54" height="3" rx="1.5"/>
+        <rect class="line" x="758" y="262" width="44" height="3" rx="1.5"/>
+        <rect class="line" x="758" y="273" width="60" height="3" rx="1.5"/>
+        <line class="arrow" x1="832" y1="264" x2="848" y2="264"/>
+          </g>
+
+          <!-- stage 4: gate -->
+          <g class="st s4">
+            <rect class="gate" x="850" y="96" width="22" height="210" rx="10"/>
+            <text class="t-gate" x="861" y="86" text-anchor="middle">strict gate</text>
+            <text class="t-dim" x="861" y="322" text-anchor="middle">D_sel</text>
+            <text x="840" y="141" text-anchor="middle" fill="#e5534b" font-size="13">✗</text>
+            <text x="840" y="269" text-anchor="middle" fill="#e5534b" font-size="13">✗</text>
+            <text x="840" y="205" text-anchor="middle" fill="#199e70" font-size="13">✓</text>
+            <line class="arrow" x1="874" y1="200" x2="896" y2="200" marker-end="url(#arg)" stroke="#199e70"/>
+            <rect class="box-out" x="900" y="152" width="88" height="96" rx="6"/>
+            <text class="t-title" x="944" y="186" text-anchor="middle">best skill</text>
+            <text class="t-title" x="944" y="204" text-anchor="middle">s*</text>
+            <text class="t-dim" x="944" y="226" text-anchor="middle">deployed</text>
+            <path class="arc-fb" d="M861 92 C861 40 861 30 780 30 L664 30 C600 30 590 40 590 60" marker-end="url(#arb)"/>
+            <text class="t-ours" x="726" y="22" text-anchor="middle">verdict per op → next round</text>
+          </g>
+
+          <!-- return path -->
+          <g class="st s1 s4">
+            <path class="arc" d="M944 250 C944 340 944 404 858 404 L152 404 C66 404 66 340 66 252" marker-end="url(#ar)"/>
+            <text class="t-dim" x="500" y="394" text-anchor="middle">next round rolls out under s*, and only a strictly better candidate replaces it</text>
+          </g>
+
+          <circle class="flowdot f1" cx="126" cy="200" r="3.2" style="--len:32px"/>
+          <circle class="flowdot f2" cx="308" cy="200" r="3.2" style="--len:10px"/>
+          <circle class="flowdot f3" cx="436" cy="200" r="3.2" style="--len:20px"/>
+          <circle class="flowdot f4" cx="720" cy="200" r="3.2" style="--len:16px"/>
+        </svg>
+        </div>
+
+        <div class="stagerail">
+          <div class="seg" role="tablist" aria-label="Loop stage">
+            <button role="tab" aria-selected="true" data-stage="1">1 · rollout</button>
+            <button role="tab" aria-selected="false" data-stage="2">2 · compact-fail</button>
+            <button role="tab" aria-selected="false" data-stage="3">3 · explore</button>
+            <button role="tab" aria-selected="false" data-stage="4">4 · gate</button>
+          </div>
+          <button class="playbtn" id="loopplay" aria-pressed="true">❚❚ pause</button>
+        </div>
+        <figcaption class="diagcap" id="loopcap"></figcaption>
+      </figure>
+    </div>
+
+    <div class="panel panel-pad reveal">
       <div class="panel-t">The operation menu — click an operation</div>
       <div class="ops">
         <button class="op" aria-expanded="false"><span class="opn">ADD_RULE</span><span class="opd">State a new procedural rule that addresses the dominant failure cluster.</span></button>
@@ -393,16 +594,6 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
     </div>
 
     <div class="panel panel-pad reveal">
-      <figure>
-        <div class="plate"><img src="assets/framework.png" width="1376" height="768"
-          alt="Loop diagram: a frozen weak model produces scored trajectories; compact-fail filtering keeps only failures as evidence F; the learned explorer picks a population of edit operations from a menu, authors one full skill per operation, and a strict validation gate on the held-out selection split keeps the best as the deployed skill; operation verdicts feed back as linguistic feedback, and anchoring on a base generator is an optional ablation."></div>
-        <figcaption>The loop. Only the text state moves: the target model, the harness, and the gate are
-        fixed, and the deployed artifact is a single <span class="mono">best_skill.md</span>. Anchoring the
-        explorer on a base generator (dashed, bottom) is an <b>ablation</b> — it hurts and is unstable.</figcaption>
-      </figure>
-    </div>
-
-    <div class="panel panel-pad reveal">
       <div class="panel-t">Why a population clears a gate a single proposal ties out on</div>
       <p class="note tight">The gate filters a <b>noisy</b> estimate: with <span class="mono">n</span>
       selection items and per-item success <span class="mono">p</span>, the measured score carries
@@ -412,6 +603,24 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
       <span class="mono">q</span>, a population clears it with 1 − (1 − q)<sup>M<sub>pop</sub></sup>, strictly
       increasing in M<sub>pop</sub>. That predicts <b>where</b> the layer helps: most in moderate-headroom
       procedural regimes, and not at all where the gate rejects every candidate.</p>
+
+      <div class="popctl">
+        <label for="popm">population M<sub>pop</sub>
+          <input type="range" id="popm" min="1" max="6" step="1" value="1">
+          <span class="val" id="popmv">1</span>
+        </label>
+        <span class="popout" id="popout"></span>
+      </div>
+      <div class="diagwrap">
+        <svg class="diagram narrow" id="popfig" viewBox="0 0 940 232" role="img"
+          aria-label="Schematic of the strict gate: a noise band of one standard deviation sits above the current best score; a single proposal that lands inside the band is tie-rejected, while a population of variants puts at least one draw above the band and clears the gate."></svg>
+      </div>
+      <p class="note">Drag the population size. The band is the real measurement noise for a 50-item
+      selection split at p = 0.4; the acceptance probability is the exact expression above at q = 0.35 per
+      variant. Where each individual variant lands is <b>illustrative</b> — the point the figure makes is
+      structural: one draw inside the band means falling back to no skill, and more draws are more chances
+      to land outside it. The figure crosses over where the knob sweep does — a lone candidate is uniformly
+      weakest, and two or more already reach the ceiling.</p>
     </div>
   </section>
 
@@ -548,7 +757,59 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
       decided on a small selection split where ties are common. Logging all 90 gated candidates per run shows
       the mechanism: each anchored run explores with <b>higher candidate variance and a lower
       worst-candidate floor</b>, without a better mean or a reliably higher best.</p>
-      <p class="hint mono" style="margin:0 0 14px;color:var(--ink-3);font-size:11.5px">worst candidate ——— best candidate · dot = mean of all 90 gated candidates</p>
+      <div class="diagwrap" style="margin-bottom:22px">
+        <svg class="diagram" viewBox="0 0 940 232" role="img"
+          aria-label="Comparison: the anchor-free explorer reads the failure evidence directly and authors a population, while the anchored variant first runs a base generator, crowns its selection-best member on the same small split, and conditions the explorer on that member — inheriting the base generator's selection noise.">
+          <defs>
+            <marker id="ar2" viewBox="0 0 9 7" refX="8" refY="3.5" markerWidth="7" markerHeight="6" orient="auto">
+              <path d="M0 0 L9 3.5 L0 7 z" fill="#6b7480"/></marker>
+            <marker id="ar2r" viewBox="0 0 9 7" refX="8" refY="3.5" markerWidth="7" markerHeight="6" orient="auto">
+              <path d="M0 0 L9 3.5 L0 7 z" fill="#e5534b"/></marker>
+          </defs>
+
+          <text class="t-ours" x="16" y="34">anchor-free (deployed method)</text>
+          <rect class="box" x="16" y="46" width="96" height="46" rx="5"/>
+          <text x="64" y="74" text-anchor="middle">evidence F</text>
+          <line class="arrow" x1="116" y1="69" x2="150" y2="69" marker-end="url(#ar2)"/>
+          <rect class="box-ex" x="154" y="46" width="128" height="46" rx="5"/>
+          <text class="t-ours" x="218" y="74" text-anchor="middle">learned explorer</text>
+          <line class="arrow" x1="286" y1="69" x2="320" y2="69" marker-end="url(#ar2)"/>
+          <rect class="box" x="324" y="46" width="128" height="46" rx="5"/>
+          <text x="388" y="74" text-anchor="middle">op-variant pop.</text>
+          <line class="arrow" x1="456" y1="69" x2="490" y2="69" marker-end="url(#ar2)"/>
+          <rect class="gate" x="494" y="46" width="74" height="46" rx="5"/>
+          <text class="t-gate" x="531" y="74" text-anchor="middle">gate</text>
+          <line class="arrow" x1="572" y1="69" x2="606" y2="69" marker-end="url(#ar2)"/>
+          <rect class="box-out" x="610" y="46" width="84" height="46" rx="5"/>
+          <text x="652" y="74" text-anchor="middle">s*</text>
+          <text class="t-dim" x="712" y="66">candidate std 2.24</text>
+          <text class="t-dim" x="712" y="82">floor 32 · tightest draw</text>
+
+          <line x1="16" y1="118" x2="924" y2="118" stroke="var(--rule-soft)" stroke-width="1"/>
+
+          <text x="16" y="152" fill="#e5534b">anchored on a base generator G (ablation)</text>
+          <rect class="box" x="16" y="164" width="96" height="46" rx="5"/>
+          <text x="64" y="192" text-anchor="middle">evidence F</text>
+          <line class="arrow" x1="116" y1="187" x2="146" y2="187" marker-end="url(#ar2)"/>
+          <rect class="box" x="150" y="164" width="92" height="46" rx="5"/>
+          <text x="196" y="185" text-anchor="middle">base G</text>
+          <text class="t-dim" x="196" y="200" text-anchor="middle">population</text>
+          <line class="arrow" x1="246" y1="187" x2="276" y2="187" marker-end="url(#ar2r)" stroke="#e5534b"/>
+          <rect class="box" x="280" y="164" width="128" height="46" rx="5" stroke="#e5534b"/>
+          <text x="344" y="185" text-anchor="middle" fill="#e5534b">sel-best member</text>
+          <text class="t-dim" x="344" y="200" text-anchor="middle">same small split</text>
+          <line class="arrow" x1="412" y1="187" x2="442" y2="187" marker-end="url(#ar2)"/>
+          <rect class="box-ex" x="446" y="164" width="122" height="46" rx="5"/>
+          <text x="507" y="185" text-anchor="middle">explorer</text>
+          <text class="t-dim" x="507" y="200" text-anchor="middle">conditioned on it</text>
+          <line class="arrow" x1="572" y1="187" x2="606" y2="187" marker-end="url(#ar2)"/>
+          <rect class="box" x="610" y="164" width="84" height="46" rx="5"/>
+          <text x="652" y="192" text-anchor="middle">gate → s*</text>
+          <text x="712" y="184" fill="#e5534b">candidate std 2.9–3.5</text>
+          <text class="t-dim" x="712" y="200">floor 24–28 · noisier draw</text>
+        </svg>
+      </div>
+      <p class="hint mono" style="margin:0 0 14px;color:var(--ink-3);font-size:11.5px">worst candidate ——— best candidate · block = mean ± 1 std · dot = mean, over all 90 gated candidates</p>
       <ul class="ranges" id="gaterange"></ul>
       <div class="rscale" id="gatescale"></div>
       <div class="tablewrap" style="margin-top:26px"><table id="gatetable"></table></div>
@@ -917,6 +1178,8 @@ function renderGate() {
       '<span class="rlab">' + r.m + '<\/span>' +
       '<span class="rtrack">' +
         '<span class="rline" style="left:' + pct(r.min) + '%;width:' + (pct(r.best) - pct(r.min)) + '%"><\/span>' +
+        '<span class="rband" style="left:' + pct(r.mean - r.std) + '%;width:' +
+          (pct(r.mean + r.std) - pct(r.mean - r.std)) + '%" title="mean ± 1 std"><\/span>' +
         '<span class="rdot" style="left:calc(' + pct(r.mean) + '% - 6px)" title="mean ' + r.mean + '"><\/span>' +
         '<span class="rcap" style="left:calc(' + pct(r.min) + '% - 2px)">' + r.min + '<\/span>' +
         '<span class="rcap" style="left:calc(' + pct(r.best) + '% - 2px)">' + r.best + '<\/span>' +
@@ -1124,6 +1387,96 @@ function bindHover() {
   svg.addEventListener("pointermove", move);
   svg.addEventListener("pointerleave", leave);
 }
+
+/* ============================== loop diagram ============================== */
+const LOOPCAP = {
+  1: "<b>Rollout.</b> The frozen target runs the training split — with no skill on the first round, under the current best after that — and the harness scores every trajectory.",
+  2: "<b>Compact-fail.</b> Successes are dropped entirely and each failure is truncated to a short window. What is left is a dense record of the recurring procedural errors, and it is the explorer's only input.",
+  3: "<b>Explore.</b> The explorer samples M<sub>pop</sub> operations from the six-item menu without replacement and authors one complete skill under each — a population of variants, not an edit of an anchor.",
+  4: "<b>Gate.</b> Every variant is scored on the held-out selection split; the best is kept only if it strictly improves on the current best, and each operation's verdict becomes prose the explorer reads next round."
+};
+const LOOP = {stage: 1, playing: true, timer: null};
+const loopEl = $("#loopdiag");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function setStage(n) {
+  loopEl.classList.remove("static");
+  LOOP.stage = n;
+  loopEl.dataset.stage = n;
+  $("#loopcap").innerHTML = LOOPCAP[n];
+  $$('.stagerail [data-stage]').forEach(b => b.setAttribute("aria-selected", +b.dataset.stage === n));
+}
+function loopTick() { setStage(LOOP.stage % 4 + 1); }
+function setPlaying(on) {
+  LOOP.playing = on;
+  clearInterval(LOOP.timer);
+  if (on) LOOP.timer = setInterval(loopTick, 3200);
+  const b = $("#loopplay");
+  b.setAttribute("aria-pressed", on);
+  b.textContent = on ? "❚❚ pause" : "▶ play";
+}
+setStage(1);
+$$('.stagerail [data-stage]').forEach(b => b.addEventListener("click", () => {
+  setPlaying(false); setStage(+b.dataset.stage);
+}));
+$("#loopplay").addEventListener("click", () => {
+  loopEl.classList.remove("static");
+  setPlaying(!LOOP.playing);
+});
+if (reduceMotion) { setPlaying(false); loopEl.classList.add("static"); }
+else if ("IntersectionObserver" in window) {
+  new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting && LOOP.playing) setPlaying(true); else clearInterval(LOOP.timer);
+  }), {threshold: 0.25}).observe(loopEl);
+  setPlaying(true);
+} else setPlaying(true);
+
+/* ============================== gate / population figure ============================== */
+const POP = {sigma: 6.9, q: 0.35, offsets: [1, 8, -2, 4, 11, 5]};
+function renderPop(M) {
+  const x = d => 170 + (d + 12) * (600 / 28), AX = 182, sg = POP.sigma;
+  let g = '';
+  g += '<rect x="' + x(-sg) + '" y="40" width="' + (x(sg) - x(-sg)) + '" height="' + (AX - 40) +
+       '" fill="rgba(107,116,128,.15)" rx="3"/>';
+  g += '<line x1="' + x(0) + '" y1="34" x2="' + x(0) + '" y2="' + AX + '" stroke="var(--ink-3)" stroke-width="1.2"/>';
+  g += '<text class="t-dim" x="' + x(0) + '" y="28" text-anchor="middle">current best v*<\/text>';
+  g += '<text class="t-dim" x="' + x(-sg) + '" y="28" text-anchor="middle">−σ<\/text>';
+  g += '<text class="t-dim" x="' + x(sg) + '" y="28" text-anchor="middle">+σ = 6.9 pts<\/text>';
+  g += '<line x1="150" y1="' + AX + '" x2="790" y2="' + AX + '" stroke="var(--rule)" stroke-width="1"/>';
+  [-10, -5, 0, 5, 10, 15].forEach(d => {
+    g += '<line x1="' + x(d) + '" y1="' + AX + '" x2="' + x(d) + '" y2="' + (AX + 5) + '" stroke="var(--rule)"/>' +
+         '<text class="t-dim" x="' + x(d) + '" y="' + (AX + 18) + '" text-anchor="middle">' +
+         (d > 0 ? "+" + d : d) + '<\/text>';
+  });
+  g += '<text class="t-dim" x="470" y="' + (AX + 40) + '" text-anchor="middle">candidate score − current best, in points on the 50-item selection split<\/text>';
+
+  g += '<text class="t-dim" x="150" y="80" text-anchor="end">single proposal<\/text>';
+  g += '<circle cx="' + x(4) + '" cy="76" r="6.5" fill="#6b7480" stroke="var(--panel)" stroke-width="2"/>';
+  g += '<text x="806" y="72" fill="#e5534b">✗ inside the band<\/text>';
+  g += '<text class="t-dim" x="806" y="88">tie-rejected, falls<\/text>';
+  g += '<text class="t-dim" x="806" y="102">back to no skill<\/text>';
+
+  g += '<text class="t-dim" x="150" y="144" text-anchor="end">population of ' + M + '<\/text>';
+  let any = false;
+  POP.offsets.slice(0, M).forEach(d => {
+    const ok = d > sg; if (ok) any = true;
+    g += '<circle cx="' + x(d) + '" cy="140" r="6.5" fill="' + (ok ? "#3987e5" : "#6b7480") +
+         '" stroke="var(--panel)" stroke-width="2"/>';
+  });
+  g += any
+    ? '<text x="806" y="136" fill="#3987e5">✓ one clears<\/text><text class="t-dim" x="806" y="152">accepted as the<\/text>' +
+      '<text class="t-dim" x="806" y="166">new best skill<\/text>'
+    : '<text x="806" y="136" fill="#e5534b">✗ all tie out<\/text><text class="t-dim" x="806" y="152">falls back to<\/text>' +
+      '<text class="t-dim" x="806" y="166">no skill<\/text>';
+  $("#popfig").innerHTML = g;
+
+  const P = 1 - Math.pow(1 - POP.q, M);
+  $("#popmv").textContent = M;
+  $("#popout").innerHTML = "P(at least one clears) = 1 − (1 − 0.35)<sup>" + M + "<\/sup> = <b>" +
+    P.toFixed(2) + "<\/b>";
+}
+$("#popm").addEventListener("input", e => renderPop(+e.target.value));
+renderPop(1);
 
 /* ============================== interactions ============================== */
 renderMain("q8b");
