@@ -266,6 +266,17 @@ svg.diagram.narrow{min-width:520px}
 .playbtn{font-family:var(--mono); font-size:12px; color:var(--ink-2); background:var(--bg-2); border:1px solid var(--rule); border-radius:3px; padding:7px 13px; cursor:pointer}
 .playbtn:hover{color:var(--ink); border-color:var(--ink-3)}
 
+.roles .lane{transition:opacity .35s ease}
+.roles[data-focus="1"] .l2,.roles[data-focus="1"] .l3,
+.roles[data-focus="2"] .l1,.roles[data-focus="2"] .l3,
+.roles[data-focus="3"] .l1,.roles[data-focus="3"] .l2{opacity:.2}
+.diagram .doc{fill:var(--bg-2); stroke:var(--rule)}
+.diagram .doc-ship{fill:rgba(25,158,112,.08); stroke:#199e70}
+.diagram .role{fill:rgba(57,135,229,.07); stroke:rgba(57,135,229,.45)}
+.diagram .role-ship{fill:rgba(25,158,112,.09); stroke:rgba(25,158,112,.5)}
+.diagram .t-ship{fill:#199e70}
+.diagram .weights{fill:none; stroke:var(--rule); stroke-dasharray:6 5}
+
 /* ---------- population / gate figure ---------- */
 .popctl{display:flex; flex-wrap:wrap; gap:16px 26px; align-items:center; margin:18px 0 6px}
 .popctl label{font-family:var(--mono); font-size:12px; color:var(--ink-2); display:flex; align-items:center; gap:12px}
@@ -576,6 +587,98 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
         </div>
         <figcaption class="diagcap" id="loopcap"></figcaption>
       </figure>
+    </div>
+
+    <div class="panel panel-pad reveal">
+      <div class="panel-t">One frozen model · three documents · three roles</div>
+      <p class="note tight" style="margin-bottom:20px">The explorer is not a second model. Every role in the
+      loop is the <b>same frozen target reading a different document</b>: the search policy is a document, the
+      authoring step is a document, and the thing that ships is a document. Swap the document and you get a
+      different agent — the weights never move. That is what makes the comparison compute-fair (the explorer
+      adds prompts, not parameters), and it is why deployment needs no optimizer at all: of the three
+      documents, only <span class="mono">best_skill.md</span> travels past the loop.</p>
+
+      <div class="diagwrap roles" id="rolesfig" data-focus="all">
+        <svg class="diagram" viewBox="0 0 960 384" role="img"
+          aria-label="Three lanes share one frozen model. Reading the compact-fail evidence, the feedback history and the operation menu, it acts as the explorer and picks which operations to try. Reading one chosen operation and the same evidence, it acts as the author and writes a full skill. Reading the gated best skill document, it acts as the target and answers the task. Only the deployed skill document leaves the loop.">
+          <defs>
+            <marker id="ar3" viewBox="0 0 9 7" refX="8" refY="3.5" markerWidth="7" markerHeight="6" orient="auto">
+              <path d="M0 0 L9 3.5 L0 7 z" fill="#6b7480"/></marker>
+          </defs>
+
+          <g class="shared">
+            <rect class="box" x="272" y="42" width="140" height="290" rx="8"/>
+            <text class="t-title" x="342" y="172" text-anchor="middle">frozen</text>
+            <text class="t-title" x="342" y="190" text-anchor="middle">model</text>
+            <text class="t-dim" x="342" y="214" text-anchor="middle">one set of weights</text>
+            <text class="t-dim" x="342" y="229" text-anchor="middle">for all three roles</text>
+            <text class="t-dim" x="342" y="24" text-anchor="middle">never trained · no gradients ever flow</text>
+          </g>
+
+          <!-- lane 1: explorer -->
+          <g class="lane l1">
+            <rect class="doc" x="14" y="42" width="210" height="74" rx="5"/>
+            <text class="t-title" x="28" y="64">explorer prompt</text>
+            <text class="t-dim" x="28" y="82">compact-fail evidence F</text>
+            <text class="t-dim" x="28" y="97">feedback history H · op menu</text>
+            <line class="arrow" x1="228" y1="79" x2="268" y2="79" marker-end="url(#ar3)"/>
+            <line class="arrow" x1="416" y1="79" x2="454" y2="79" marker-end="url(#ar3)"/>
+            <rect class="role" x="458" y="42" width="214" height="74" rx="5"/>
+            <text class="t-ours" x="472" y="64">EXPLORER · explore</text>
+            <text class="t-dim" x="472" y="82">picks which operations to try</text>
+            <text class="t-dim" x="472" y="97">the search policy itself</text>
+            <text class="t-dim" x="690" y="76">output: a population of ops</text>
+            <text class="t-dim" x="690" y="93">stays inside the loop</text>
+          </g>
+
+          <!-- lane 2: author -->
+          <g class="lane l2">
+            <rect class="doc" x="14" y="150" width="210" height="74" rx="5"/>
+            <text class="t-title" x="28" y="172">author prompt</text>
+            <text class="t-dim" x="28" y="190">one chosen operation</text>
+            <text class="t-dim" x="28" y="205">plus the same evidence F</text>
+            <line class="arrow" x1="228" y1="187" x2="268" y2="187" marker-end="url(#ar3)"/>
+            <line class="arrow" x1="416" y1="187" x2="454" y2="187" marker-end="url(#ar3)"/>
+            <rect class="role" x="458" y="150" width="214" height="74" rx="5"/>
+            <text class="t-ours" x="472" y="172">AUTHOR · explore</text>
+            <text class="t-dim" x="472" y="190">writes one complete skill</text>
+            <text class="t-dim" x="472" y="205">from scratch under that op</text>
+            <text class="t-dim" x="690" y="184">output: a candidate skill</text>
+            <text class="t-dim" x="690" y="201">stays inside the loop</text>
+          </g>
+
+          <!-- lane 3: target -->
+          <g class="lane l3">
+            <rect class="doc-ship" x="14" y="258" width="210" height="74" rx="5"/>
+            <text class="t-title" x="28" y="280">best_skill.md</text>
+            <text class="t-dim" x="28" y="298">the one document the gate</text>
+            <text class="t-dim" x="28" y="313">has accepted</text>
+            <line class="arrow" x1="228" y1="295" x2="268" y2="295" marker-end="url(#ar3)"/>
+            <line class="arrow" x1="416" y1="295" x2="454" y2="295" marker-end="url(#ar3)"/>
+            <rect class="role-ship" x="458" y="258" width="214" height="74" rx="5"/>
+            <text class="t-ship" x="472" y="280">TARGET · exploit</text>
+            <text class="t-dim" x="472" y="298">answers the benchmark task</text>
+            <text class="t-dim" x="472" y="313">under the skill</text>
+            <text class="t-ship" x="690" y="292">ships · the deployed artifact</text>
+            <text class="t-dim" x="690" y="309">zero optimizer calls at inference</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="stagerail">
+        <div class="seg" role="tablist" aria-label="Highlight a role">
+          <button role="tab" aria-selected="true" data-role="all">all three</button>
+          <button role="tab" aria-selected="false" data-role="1">explorer</button>
+          <button role="tab" aria-selected="false" data-role="2">author</button>
+          <button role="tab" aria-selected="false" data-role="3">target</button>
+        </div>
+        <span class="hint mono" style="color:var(--ink-3);font-size:11.5px">identity = the document in context</span>
+      </div>
+
+      <p class="note">Both evaluation regimes are <b>target-matched</b>: the frozen target is also its own
+      optimizer, so no stronger model ever enters the loop and a within-column difference reflects what is
+      proposed, not who proposed it. The two explore-side documents are scratch state — they are rebuilt every
+      round and never leave the optimization loop.</p>
     </div>
 
     <div class="panel panel-pad reveal">
@@ -1477,6 +1580,12 @@ function renderPop(M) {
 }
 $("#popm").addEventListener("input", e => renderPop(+e.target.value));
 renderPop(1);
+
+/* ============================== role figure ============================== */
+$$('[data-role]').forEach(btn => btn.addEventListener("click", () => {
+  $$('[data-role]').forEach(b => b.setAttribute("aria-selected", b === btn));
+  $("#rolesfig").dataset.focus = btn.dataset.role;
+}));
 
 /* ============================== interactions ============================== */
 renderMain("q8b");
