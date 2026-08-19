@@ -275,7 +275,8 @@ svg.diagram.narrow{min-width:520px}
 .diagram .role{fill:rgba(57,135,229,.07); stroke:rgba(57,135,229,.45)}
 .diagram .role-ship{fill:rgba(25,158,112,.09); stroke:rgba(25,158,112,.5)}
 .diagram .t-ship{fill:#199e70}
-.diagram .weights{fill:none; stroke:var(--rule); stroke-dasharray:6 5}
+.diagram .chip{fill:var(--panel-2); stroke:var(--rule); stroke-width:1}
+.diagram .t-chip{fill:var(--ink-2); font-size:11px}
 
 /* ---------- population / gate figure ---------- */
 .popctl{display:flex; flex-wrap:wrap; gap:16px 26px; align-items:center; margin:18px 0 6px}
@@ -607,14 +608,8 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
           </defs>
 
           <g class="shared">
-            <rect class="box" x="272" y="42" width="140" height="290" rx="8"/>
-            <text class="t-title" x="342" y="172" text-anchor="middle">frozen</text>
-            <text class="t-title" x="342" y="190" text-anchor="middle">model</text>
-            <text class="t-dim" x="342" y="214" text-anchor="middle">one set of weights</text>
-            <text class="t-dim" x="342" y="229" text-anchor="middle">for all three roles</text>
             <text class="t-dim" x="342" y="24" text-anchor="middle">never trained · no gradients ever flow</text>
           </g>
-
           <!-- lane 1: explorer -->
           <g class="lane l1">
             <rect class="doc" x="14" y="42" width="210" height="74" rx="5"/>
@@ -622,7 +617,10 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
             <text class="t-dim" x="28" y="82">compact-fail evidence F</text>
             <text class="t-dim" x="28" y="97">feedback history H · op menu</text>
             <line class="arrow" x1="228" y1="79" x2="268" y2="79" marker-end="url(#ar3)"/>
-            <line class="arrow" x1="416" y1="79" x2="454" y2="79" marker-end="url(#ar3)"/>
+            <rect class="chip" x="276" y="60" width="132" height="38" rx="5"/>
+            <text class="t-chip" x="342" y="77" text-anchor="middle">frozen model</text>
+            <text class="t-dim" x="342" y="91" text-anchor="middle">same weights</text>
+            <line class="arrow" x1="412" y1="79" x2="454" y2="79" marker-end="url(#ar3)"/>
             <rect class="role" x="458" y="42" width="214" height="74" rx="5"/>
             <text class="t-ours" x="472" y="64">EXPLORER · explore</text>
             <text class="t-dim" x="472" y="82">picks which operations to try</text>
@@ -638,7 +636,10 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
             <text class="t-dim" x="28" y="190">one chosen operation</text>
             <text class="t-dim" x="28" y="205">plus the same evidence F</text>
             <line class="arrow" x1="228" y1="187" x2="268" y2="187" marker-end="url(#ar3)"/>
-            <line class="arrow" x1="416" y1="187" x2="454" y2="187" marker-end="url(#ar3)"/>
+            <rect class="chip" x="276" y="168" width="132" height="38" rx="5"/>
+            <text class="t-chip" x="342" y="185" text-anchor="middle">frozen model</text>
+            <text class="t-dim" x="342" y="199" text-anchor="middle">same weights</text>
+            <line class="arrow" x1="412" y1="187" x2="454" y2="187" marker-end="url(#ar3)"/>
             <rect class="role" x="458" y="150" width="214" height="74" rx="5"/>
             <text class="t-ours" x="472" y="172">AUTHOR · explore</text>
             <text class="t-dim" x="472" y="190">writes one complete skill</text>
@@ -654,7 +655,10 @@ footer p{margin:0; max-width:62ch; line-height:1.65}
             <text class="t-dim" x="28" y="298">the one document the gate</text>
             <text class="t-dim" x="28" y="313">has accepted</text>
             <line class="arrow" x1="228" y1="295" x2="268" y2="295" marker-end="url(#ar3)"/>
-            <line class="arrow" x1="416" y1="295" x2="454" y2="295" marker-end="url(#ar3)"/>
+            <rect class="chip" x="276" y="276" width="132" height="38" rx="5"/>
+            <text class="t-chip" x="342" y="293" text-anchor="middle">frozen model</text>
+            <text class="t-dim" x="342" y="307" text-anchor="middle">same weights</text>
+            <line class="arrow" x1="412" y1="295" x2="454" y2="295" marker-end="url(#ar3)"/>
             <rect class="role-ship" x="458" y="258" width="214" height="74" rx="5"/>
             <text class="t-ship" x="472" y="280">TARGET · exploit</text>
             <text class="t-dim" x="472" y="298">answers the benchmark task</text>
